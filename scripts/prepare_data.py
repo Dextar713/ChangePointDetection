@@ -11,7 +11,9 @@ import pandas as pd
 
 
 def load_data(ticker: str, start_date: datetime, interval: str = '1d', download_fresh = False) -> pd.DataFrame:
-    data_path = f'../data/{ticker}_{start_date.strftime('%Y-%m-%d')}_{interval}.csv'
+    rel_path = f'../data/{ticker}_{start_date.strftime('%Y-%m-%d')}_{interval}.csv'
+    data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), rel_path)
+    print(f"Data path: {data_path}")
     if not download_fresh and os.path.exists(data_path):
         data = pd.read_csv(data_path, index_col=0, header=[0, 1])
     else:
@@ -32,7 +34,7 @@ def prepare_data(data: pd.DataFrame) -> pd.DataFrame:
     except Exception as e:
         print(e)
         pass
-    data = data[['Close', 'Volume']]
+    # data = data[['Close', 'Volume']]
     print(data.columns)
     data[['Close', 'Volume']] = data[
         ['Close', 'Volume']].astype(float)

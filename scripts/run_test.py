@@ -1,9 +1,12 @@
 import datetime
+import os
 
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
-from change_point import BinarySegmentation, OptSegmentation
+from bin_seg import BinarySegmentation
+from opt_seg import OptSegmentation
+from online_detector import NaiveOnlineDetector, FastOnlineDetector
 from prepare_data import load_data, prepare_data
 from stats_tests import check_stationarity
 import warnings
@@ -41,7 +44,7 @@ def generate_series(cost_type: str = 'normal', n_segments=3, noise_std=1.0) -> n
         means = np.random.randint(low=-20, high=25, size=n_segments)
         time_series = []
         for mu in means:
-            cur_len = np.random.uniform(low=20, high=50)
+            cur_len = np.random.randint(low=20, high=50)
             cur_seg = np.random.normal(mu, noise_std, size=cur_len)
             time_series.append(cur_seg)
         return np.concatenate(time_series)
@@ -60,23 +63,9 @@ def generate_series(cost_type: str = 'normal', n_segments=3, noise_std=1.0) -> n
 
     raise ValueError("Invalid model")
 
-def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost_type:str='normal', model_type:str='opt') -> None:
-    if time_series is None:
-        time_series = generate_series(cost_type, n_segments=7)
-    if time_axes is None:
-        time_axes = np.arange(0, time_series.shape[0])
+
+def visualize_detections(time_series: np.ndarray, time_axes, change_points: np.ndarray, show_std: bool = False) -> None:
     is_x_date = isinstance(time_axes, pd.DatetimeIndex) or isinstance(time_axes[0], (datetime.datetime, pd.Timestamp))
-
-    if model_type == 'opt':
-        model = OptSegmentation(model=cost_type, min_dist=5)
-        change_points = model.fit_predict(time_series)
-    elif model_type == 'normal':
-        model = BinarySegmentation(model=cost_type, min_dist=5)
-        change_points, gains = model.fit_predict(time_series)
-        # plot_elbow_gains(gains)
-    else:
-        raise ValueError("Invalid model type")
-
     if is_x_date:
         print(f"Detected {len(change_points)} Points:    {time_axes[change_points]}")
     else:
@@ -93,7 +82,7 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
             x_val = point
         plt.axvline(x=x_val, color='red', linestyle='--', linewidth=1, label='Change Point')
 
-    if cost_type == 'normal':
+    if show_std:
         start = 0
         for point in change_points + [len(time_series)]:
             segment = time_series[start:point]
@@ -108,19 +97,58 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
+    save_path = os.path.join(os.path.dirname(__file__), "../visuals", "detected_change_points.png")
+    plt.savefig(save_path)
     plt.show()
+
+
+def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost_type:str='normal', 
+                   model_type:str='opt', method:str = 'offline') -> None:
+    if time_series is None:
+        time_series = generate_series(cost_type, n_segments=7)
+    if time_axes is None:
+        time_axes = np.arange(0, time_series.shape[0])
+    
+    if method == 'offline':
+        if model_type == 'opt':
+            model = OptSegmentation(model=cost_type, min_dist=5)
+        elif model_type == 'binseg':
+            model = BinarySegmentation(model=cost_type, min_dist=5)
+            # plot_elbow_gains(gains)
+        else:
+            raise ValueError("Invalid model type")
+        change_points = model.fit_predict(time_series)
+    else:
+        change_points = []
+        model = NaiveOnlineDetector(cost_type, model_type, min_dist=10)
+        # model = FastOnlineDetector(cost_type=cost_type, min_dist=10, horizon_size=90)
+        n = len(time_series)
+        for i in range(n):
+            is_detected = model.update(time_series[i])
+            if is_detected:
+                # print(f'Changepoint {model.last_change_point+model.offset} detected at point {i}')
+                change_points.append(model.last_change_point + model.offset)
+                # change_points.append(i)
+                # print(model.last_change_point)
+                # print(i-model.offset)
+               
+                # change_points.append(i)
+
+    show_std = cost_type == 'normal'
+    visualize_detections(time_series, time_axes, change_points, show_std)
+    
 
 def run_tests():
     data = load_data(ticker='AMD', start_date=datetime.datetime(2020, 1, 1), interval='1d')
     data = prepare_data(data)
-    # target_col = 'log_return'
-    target_col = 'smooth_log_close'
-    cost_type = 'mean_var'
-    # cost_type = 'linear'
-    data = data[1000:]
+    # target_col = 'Close'
+    target_col = 'Close'
+    # cost_type = 'mean_var'
+    cost_type = 'linear'
+    data = data[-200:]
     # check_stationarity(np.diff(data['smooth_log_close']))
-    test_detection(time_series=data[target_col].values, time_axes=data.index, cost_type=cost_type, model_type='opt')
-    # test_detection(None, None, 'mean_var')
+    test_detection(time_series=data[target_col].values, time_axes=data.index, cost_type=cost_type, model_type='opt', method='online')
+    # test_detection(None, None, 'linear', 'opt', method='online')
 
 if __name__ == '__main__':
     run_tests()
