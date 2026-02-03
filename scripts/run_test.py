@@ -111,16 +111,16 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
     
     if method == 'offline':
         if model_type == 'opt':
-            model = OptSegmentation(model=cost_type, min_dist=5)
+            model = OptSegmentation(model=cost_type, min_dist=10)
         elif model_type == 'binseg':
-            model = BinarySegmentation(model=cost_type, min_dist=5)
+            model = BinarySegmentation(model=cost_type, min_dist=10)
             # plot_elbow_gains(gains)
         else:
             raise ValueError("Invalid model type")
         change_points = model.fit_predict(time_series)
     else:
         change_points = []
-        model = NaiveOnlineDetector(cost_type, model_type, min_dist=10)
+        model = NaiveOnlineDetector(cost_type, model_type, min_dist=15)
         # model = FastOnlineDetector(cost_type=cost_type, min_dist=10, horizon_size=90)
         n = len(time_series)
         for i in range(n):
@@ -144,11 +144,11 @@ def run_tests():
     # target_col = 'Close'
     target_col = 'Close'
     # cost_type = 'mean_var'
-    cost_type = 'linear'
+    cost_type = 'linear' 
     data = data[-200:]
     # check_stationarity(np.diff(data['smooth_log_close']))
     test_detection(time_series=data[target_col].values, time_axes=data.index, cost_type=cost_type, model_type='opt', method='online')
-    # test_detection(None, None, 'linear', 'opt', method='online')
+    # test_detection(None, None, cost_type='linear', model_type='binseg', method='online')
 
 if __name__ == '__main__':
     run_tests()

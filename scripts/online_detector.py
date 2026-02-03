@@ -14,10 +14,12 @@ class NaiveOnlineDetector:
         self.min_dist = min_dist
         self.last_change_point = 0
         self.horizon_size = horizon_size
+        self.n_samples = 0
         self.offset = 0
 
 
     def update(self, value) -> bool:
+        self.n_samples += 1
         self.signal_buffer.append(value)
         if len(self.signal_buffer) < 2 * self.min_dist:
             return False 
