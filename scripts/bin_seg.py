@@ -21,11 +21,11 @@ class BinarySegmentation:
         return best_point, max_gain
 
 
-    def fit_predict(self, signal: np.ndarray) -> list[int]:
+    def fit_predict(self, signal: np.ndarray, horizon_size:int|None = None) -> list[int]:
         n = len(signal)
         if n < 2 * self.min_dist:
             return []
-        min_gain = get_gain_threshold(signal, self.model)
+        min_gain = get_gain_threshold(signal, self.model, horizon_size=horizon_size)
         if self.model == 'linear':
             self.cost_computer = LinearCostComputer(signal)
         else:

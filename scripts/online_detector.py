@@ -23,11 +23,11 @@ class NaiveOnlineDetector:
         self.signal_buffer.append(value)
         if len(self.signal_buffer) < 2 * self.min_dist:
             return False 
-        change_points = self.model.fit_predict(np.array(self.signal_buffer))
+        change_points = self.model.fit_predict(np.array(self.signal_buffer), horizon_size=self.horizon_size)
         if len(change_points) == 0:
             return False
         
-        if np.abs(change_points[-1] - self.last_change_point) < self.min_dist:
+        if np.abs(change_points[-1] - self.last_change_point) < self.min_dist or change_points[-1] < self.last_change_point:
             return False
         # cutoff_idx = max(0, self.last_change_point-2*self.min_dist)
         cutoff_idx = max(0, self.last_change_point - self.horizon_size)
@@ -50,13 +50,11 @@ class FastOnlineDetector:
     def update(self, value) -> bool:
         # self.signal_buffer.append(value)
         self.n_samples += 1
-        if self.n_samples < 2 * self.min_dist:
-            return False
         change_points = self.model.update(value)
         if len(change_points) == 0:
             return False 
         cur_last_point = change_points[-1] - self.offset
-        if cur_last_point - self.last_change_point < self.min_dist:
+        if np.abs(cur_last_point - self.last_change_point) < self.min_dist or cur_last_point < self.last_change_point:
             return False
         
         # cutoff_idx = max(0, self.last_change_point-self.horizon_size)
