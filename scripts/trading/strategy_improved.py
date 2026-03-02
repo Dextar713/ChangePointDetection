@@ -9,13 +9,13 @@ import os
 
 try:
     from .. import prepare_data
-    from ..online_detector import NaiveOnlineDetector 
+    from ..online_detector import NaiveOnlineDetector, FastOnlineDetector
 except ImportError:
     # running as a script; add parent folder to path
     import sys, os, importlib
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     prepare_data = importlib.import_module('prepare_data')
-    from online_detector import NaiveOnlineDetector 
+    from online_detector import NaiveOnlineDetector, FastOnlineDetector 
 
 
 all_change_points = []
@@ -39,8 +39,8 @@ class VolatilityNormalizedTrendCPStrategy(Strategy):
     """
     
     def init(self):
-        self.min_dist = 12
-        self.detector_horizon = 30
+        self.min_dist = 15
+        self.detector_horizon = 50
         self.lookback_period = 50
         self.cur_trend_delay = 3
                 
@@ -51,9 +51,9 @@ class VolatilityNormalizedTrendCPStrategy(Strategy):
         self.alpha = 0.7
         self.volume_window = 40
         
-        self.detector = NaiveOnlineDetector(
+        self.detector = FastOnlineDetector(
             cost_type='linear', 
-            model_type='opt', 
+            # model_type='opt', 
             min_dist=self.min_dist, 
             horizon_size=self.detector_horizon
         )
@@ -101,8 +101,8 @@ class VolatilityNormalizedTrendCPStrategy(Strategy):
         last_change_point = self.detector.last_change_point
         all_change_points.append(self.detector.last_change_point + self.detector.offset)
         end_point = self.detector.n_samples - self.detector.offset
-        self.cur_trend_delay = int((end_point - last_change_point) / self.min_dist*2)
-        # self.cur_trend_delay = 1
+        # self.cur_trend_delay = int((end_point - last_change_point) / self.min_dist*2)
+        self.cur_trend_delay = 0
         range_start = last_change_point + self.cur_trend_delay + self.detector.offset
         range_end = end_point + self.detector.offset
         

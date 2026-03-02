@@ -6,7 +6,7 @@ import numpy as np
 
 
 def test_cpd_offline(cost_type:str='linear', model:str = 'opt', min_dist:int = 15, plot:bool = False):
-    tests = generate_cp_series(num_tests=30, num_points=100, cost_type=cost_type)
+    tests = generate_cp_series(num_tests=50, num_points=70, cost_type=cost_type)
     if model == 'opt':
         detector = OptSegmentation(model=cost_type, min_dist=min_dist)
     elif model == 'binseg':
@@ -16,7 +16,8 @@ def test_cpd_offline(cost_type:str='linear', model:str = 'opt', min_dist:int = 1
     precision_list = []
     recall_list = []
     for test in tests:
-        detected_cps = detector.fit_predict(test[0])
+        signal_var = 2.0 if cost_type == 'l2' else None
+        detected_cps = detector.fit_predict(test[0], signal_var=signal_var)
         if plot:
             plot_cps_with_detections(test[0], test[1], detected_cps)
         # print('Num true cps: ', len(test[1]))
@@ -33,9 +34,10 @@ def test_cpd_offline(cost_type:str='linear', model:str = 'opt', min_dist:int = 1
     return avg_precision, avg_recall
 
 def test_cpd_online(cost_type:str='linear', model:str = 'opt', min_dist:int = 15, plot:bool = False):
-    tests = generate_cp_series(num_tests=50, num_points=50, cost_type=cost_type)
-    detector = NaiveOnlineDetector(cost_type=cost_type, model_type=model, min_dist=min_dist, horizon_size=90)
-    # detector = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=80)
+    tests = generate_cp_series(num_tests=150, num_points=70, cost_type=cost_type)
+    # detector = NaiveOnlineDetector(cost_type=cost_type, model_type=model, min_dist=min_dist, horizon_size=90)
+    signal_var = 2.0 if cost_type == 'l2' else None
+    detector = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=70, signal_var=signal_var)
     precision_list = []
     recall_list = []
     for test in tests:
@@ -88,5 +90,7 @@ def calc_precision_recall(true_cps, detected_cps, tolerance=5):
 
 
 if __name__ == '__main__':
-    # test_cpd_offline(cost_type='linear', model='opt', min_dist=15)
-    test_cpd_online(cost_type='linear', model='opt', min_dist=15)
+    # test_cpd_offline(cost_type='normal', model='opt', min_dist=18, plot=False)
+    test_cpd_online(cost_type='normal', model='opt', min_dist=21)
+
+    # Fast online Average Precision: 0.7756, Average Recall: 0.8796, min dist = 15

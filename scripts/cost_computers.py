@@ -1,25 +1,24 @@
 import numpy as np
 
-def get_gain_threshold(signal: np.ndarray, cost_type: str, horizon_size:int|None = None) -> float:
+def get_gain_threshold(signal: np.ndarray, cost_type: str, signal_var: float|None = None, horizon_size:int|None = None) -> float:
     n = len(signal)
     if n == 0:
         return 0
     # if horizon_size is not None:
     #     n = max(horizon_size, n)
     if cost_type == 'l2':
-        beta = 1.0
-        signal_var = np.var(signal)
+        beta = 2.7
         return beta * np.log(n) * signal_var
     if cost_type == 'normal':
-        beta = 3.0
+        beta = 1.3
         return beta * np.log(n)
     if cost_type == 'linear':
-        beta = 2.0
+        beta = 1.2
         diff_var = np.var(np.diff(signal))
         return (2 * beta) * np.log(n) * diff_var / 2
     if cost_type == 'mean_var':
-        beta = 1.0
-        return 2 * beta * np.log(n)
+        beta = 2.0
+        return beta * np.log(n)
     raise ValueError('Unsupported cost type')
 
 class CostComputer:

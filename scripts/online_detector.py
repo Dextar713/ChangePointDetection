@@ -3,7 +3,7 @@ from bin_seg import BinarySegmentation
 from opt_seg import OptSegmentation, OnlineOptSegmentation 
 
 class NaiveOnlineDetector:
-    def __init__(self, cost_type:str, model_type:str = 'opt', min_dist: int = 5, horizon_size:int=30):
+    def __init__(self, cost_type:str, model_type:str = 'opt', min_dist: int = 5, horizon_size:int=30, signal_var: float|None = None):
         if model_type == 'opt':
             self.model = OptSegmentation(cost_type, min_dist)
         elif model_type == 'binseg':
@@ -16,14 +16,14 @@ class NaiveOnlineDetector:
         self.horizon_size = horizon_size
         self.n_samples = 0
         self.offset = 0
-
+        self.signal_var = signal_var
 
     def update(self, value) -> bool:
         self.n_samples += 1
         self.signal_buffer.append(value)
         if len(self.signal_buffer) < 2 * self.min_dist:
             return False 
-        change_points = self.model.fit_predict(np.array(self.signal_buffer), horizon_size=self.horizon_size)
+        change_points = self.model.fit_predict(np.array(self.signal_buffer), horizon_size=self.horizon_size, signal_var=self.signal_var)
         if len(change_points) == 0:
             return False
         
@@ -38,8 +38,8 @@ class NaiveOnlineDetector:
 
 
 class FastOnlineDetector:
-    def __init__(self, cost_type:str, min_dist: int = 5, horizon_size:int=60):
-        self.model = OnlineOptSegmentation(cost_type, min_dist, horizon_size=horizon_size)
+    def __init__(self, cost_type:str, min_dist: int = 5, horizon_size:int=60, signal_var: float|None = None):
+        self.model = OnlineOptSegmentation(cost_type, min_dist, horizon_size=horizon_size, signal_var=signal_var)
         # self.signal_buffer = []
         self.min_dist = min_dist
         self.offset: int = 0

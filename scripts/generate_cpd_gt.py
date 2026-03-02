@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy
 
 def generate_cp_series(num_tests: int = 10, num_points: int = 10, cost_type:str = 'linear'):
-    methods = {"linear": generate_linear_cpd}
+    methods = {"linear": generate_linear_cpd, 'normal': generate_variance_cpd, 'l2': generate_mean_cpd}
     try:
         cur_method = methods[cost_type]
     except KeyError:
@@ -29,7 +29,7 @@ def generate_linear_cpd(num_points: int = 10):
     cur_point = init_length
     for _ in range(num_points):
         cur_slope = np.random.uniform(low=slope_range[0], high=slope_range[1])
-        while np.abs(prev_slope-cur_slope)<0.3:
+        while np.abs(prev_slope-cur_slope)<0.35:
             cur_slope = np.random.uniform(low=slope_range[0], high=slope_range[1])
         cur_intercept = time_series[-1][-1]
         cur_length = np.random.randint(low=length_range[0], high=length_range[1]+1)
@@ -43,6 +43,55 @@ def generate_linear_cpd(num_points: int = 10):
         cur_point += cur_length
         prev_slope = cur_slope
     return np.concatenate(time_series), change_points
+
+def generate_variance_cpd(num_points: int = 10):
+    std_list = [1.0]
+    for i in range(num_points):
+        std = np.random.uniform(0.3, 5.0)
+        while std / std_list[-1] < 1.7 and std_list[-1] / std < 1.7:
+            std = np.random.uniform(0.5, 7.0)
+        std_list.append(std)
+    # print(std_list)
+    time_series = []
+    cps = []
+    last_point = 0
+    for i in range(len(std_list)):
+        cur_size = np.random.randint(low=50, high=80)
+        segment = np.random.normal(0, std_list[i], size=cur_size)
+        time_series.append(segment)
+        last_point += cur_size
+        cps.append(last_point)
+    cps.pop()
+    return np.concatenate(time_series), cps
+
+def generate_mean_cpd(num_points: int = 10):
+    base_mean = 10
+    mean_list = [base_mean]
+    std = base_mean * 0.2
+    last_point = 25 
+    drift_size = 8
+    cps = []
+    time_series = [np.random.normal(mean_list[0], std, size=last_point)]
+    for i in range(num_points):
+        factor_down = np.random.uniform(-0.5, -0.9)
+        factor_up = np.random.uniform(0.5, 0.9)
+        factor = np.random.choice([factor_up, factor_down])
+        new_mean = mean_list[-1] + base_mean * factor
+        # std = base_mean * 0.2
+        if new_mean < mean_list[-1]:
+            drift = np.linspace(new_mean, mean_list[-1], num=drift_size, endpoint=True)[::-1]
+        else:
+            drift = np.linspace(mean_list[-1], new_mean, num=drift_size, endpoint=True)
+        time_series.append(drift + np.random.normal(std))
+        cps.append(last_point + drift_size//2+1)
+        new_size = np.random.randint(30, 60)
+        mean_list.append(new_mean)
+        segment = np.random.normal(new_mean, std, size=new_size)
+        time_series.append(segment)
+        last_point += drift_size + new_size 
+    return np.concatenate(time_series), cps
+
+    
 
 def plot_cps(time_series: np.ndarray, change_points: list[int]):
     plt.figure(figsize=(12, 6))
@@ -77,6 +126,6 @@ def plot_cps_with_detections(time_series: np.ndarray, change_points: list[int], 
     plt.show()
 
 if __name__ == "__main__":
-    series, cps = generate_cp_series(num_tests=1, num_points=10, cost_type='linear')
-    plot_cps(series, cps)
+    tests = generate_cp_series(num_tests=1, num_points=10, cost_type='linear')
+    plot_cps(tests[0][0], tests[0][1])
 

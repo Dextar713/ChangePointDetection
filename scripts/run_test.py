@@ -136,9 +136,11 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
     else:
         change_points = []
         # model = NaiveOnlineDetector(cost_type=cost_type, min_dist=15, horizon_size=100, model_type=model_type)
-        model = FastOnlineDetector(cost_type='linear', min_dist=15, horizon_size=100)
+        
+        signal_var = 1.0 if cost_type == 'l2' else None
+        min_dist = 21 if cost_type == 'normal' else 15
+        model = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=100, signal_var=signal_var)
         n = len(time_series)
-        print(n)
         detection_times = []
         for i in range(n):
             is_detected = model.update(time_series[i])
@@ -152,13 +154,13 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
     
 
 def run_tests():
-    # test_detection(None, None, cost_type='linear', model_type='opt', method='online', plot=True)
-    jobs_data = prepare_jobs_data()
+    test_detection(None, None, cost_type='normal', model_type='opt', method='online', plot=True)
+    # jobs_data = prepare_jobs_data()
     target_col = 'Total_jobs'
     # cost_type = 'mean_var'
     cost_type = 'linear' 
     
-    test_detection(time_series=jobs_data[target_col].values, time_axes=jobs_data.index, cost_type=cost_type, model_type='opt', method='online')
+    # test_detection(time_series=jobs_data[target_col].values, time_axes=jobs_data.index, cost_type=cost_type, model_type='opt', method='online')
     
     # stock_data = load_data(ticker='^GSPC', start_date=datetime.datetime(2001, 1, 1), interval='1mo')
     # stock_data = prepare_data(stock_data)

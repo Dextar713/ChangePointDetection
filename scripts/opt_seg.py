@@ -8,11 +8,11 @@ class OptSegmentation:
         self.min_dist = min_dist
         self.cost_computer = None
 
-    def fit_predict(self, signal: np.ndarray, horizon_size:int|None=None) -> list[int]:
+    def fit_predict(self, signal: np.ndarray, horizon_size:int|None=None, signal_var: float|None=None) -> list[int]:
         n = len(signal)
         if n < 2 * self.min_dist:
             return []
-        min_gain = get_gain_threshold(signal, self.model, horizon_size=horizon_size)
+        min_gain = get_gain_threshold(signal, self.model, signal_var=signal_var, horizon_size=horizon_size)
         if self.model == 'linear':
             self.cost_computer = LinearCostComputer(signal)
         else:
@@ -54,13 +54,13 @@ class OptSegmentation:
     
 
 class OnlineOptSegmentation:
-    def __init__(self, cost_type = 'normal', min_dist: int = 5, horizon_size: int = 60):
+    def __init__(self, cost_type = 'normal', min_dist: int = 5, horizon_size: int = 60, signal_var: float|None = None):
         self.cost_type = cost_type
         self.min_dist = min_dist
         if cost_type == 'linear':
             self.cost_computer = LinearOnlineCostComputer(horizon_size=horizon_size)
         else:
-            self.cost_computer = OnlineCostComputer(cost_type, horizon_size=horizon_size)
+            self.cost_computer = OnlineCostComputer(cost_type, horizon_size=horizon_size, signal_var=signal_var)
         self.horizon_size = horizon_size
         self.n_samples = 0 
         self.C = np.full(2*self.min_dist+1, np.inf)
@@ -86,6 +86,7 @@ class OnlineOptSegmentation:
             start_idx = self.n_samples
             if self.C.shape[0] <= self.n_samples:
                 self.double_size()
+        # this loop has mostly 1 iteration, except initial phase
         for t in range(start_idx, self.n_samples+1):
             self.candidates_set.add(t-self.min_dist)
             if t == self.n_samples:
@@ -109,7 +110,7 @@ class OnlineOptSegmentation:
             self.C[t] = min_cost
             self.path[t] = best_point
             for p in prev_points:
-                if self.C[p] + self.cost_computer.cost(p, t) > self.C[t]:
+                if self.C[p] + self.cost_computer.cost(p, t) + penalty > self.C[t]:
                     self.candidates_set.discard(p)
         return self.backtrack_changepoints()
 

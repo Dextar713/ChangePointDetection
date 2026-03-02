@@ -1,9 +1,10 @@
 import numpy as np
 
 class OnlineCostComputer:
-    def __init__(self, cost_type: str, horizon_size:int = 100):
+    def __init__(self, cost_type: str, horizon_size:int = 100, signal_var: float|None = None):
         self.horizon_size = horizon_size
         self.cost_type = cost_type
+        self.signal_var = signal_var
         self.cum_sum = np.array([0])
         self.cum_sum_sq = np.array([0])
         self.n_samples = 0
@@ -47,14 +48,17 @@ class OnlineCostComputer:
             return 0
         n = self.horizon_size
         if self.cost_type == 'normal':
-            beta = 1.7
+            beta = 5.0
             return beta * np.log(n)
         if self.cost_type == 'mean_var':
             beta = 2.0
             return 2 * beta * np.log(n)
-        _, variance = self._get_stats(start, end)
+        if self.signal_var is not None:
+            variance = self.signal_var
+        else:
+            _, variance = self._get_stats(start, end)
         if self.cost_type == 'l2':
-            beta = 1.0
+            beta = 4.0
             return beta * np.log(n) * variance
         
         raise ValueError('Unsupported cost type')
