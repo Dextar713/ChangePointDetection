@@ -91,6 +91,6 @@ def calc_precision_recall(true_cps, detected_cps, tolerance=5):
 
 if __name__ == '__main__':
     # test_cpd_offline(cost_type='linear', model='opt', min_dist=18, plot=False)
-    test_cpd_online(cost_type='linear', model='opt', min_dist=18, horizon_size=150)
+    test_cpd_online(cost_type='l2', model='opt', min_dist=18, horizon_size=150)
 
     # Fast online Average Precision: 0.7756, Average Recall: 0.8796, min dist = 15

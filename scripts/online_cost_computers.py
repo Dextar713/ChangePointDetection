@@ -8,8 +8,13 @@ class OnlineCostComputer:
         self.cum_sum = np.array([0])
         self.cum_sum_sq = np.array([0])
         self.n_samples = 0
+        self.offset = 0
 
     def double_size(self):
+        if self.n_samples >= 2*self.horizon_size:
+            self.offset = self.n_samples - self.horizon_size - 1
+            self.cum_sum[self.offset:] -= self.cum_sum[self.offset]
+            self.cum_sum_sq[self.offset:] -= self.cum_sum_sq[self.offset]
         self.cum_sum = np.concatenate([self.cum_sum, np.zeros(self.n_samples+1)])
         self.cum_sum_sq = np.concatenate([self.cum_sum_sq, np.zeros(self.n_samples+1)])
 
@@ -48,11 +53,11 @@ class OnlineCostComputer:
             return 0
         n = self.horizon_size
         if self.cost_type == 'normal':
-            beta = 5.0
+            beta = 2.5
             return beta * np.log(n)
         if self.cost_type == 'mean_var':
-            beta = 2.2
-            return 2 * beta * np.log(n)
+            beta = 2.7
+            return beta * np.log(n)
         if self.signal_var is not None:
             variance = self.signal_var
         else:
