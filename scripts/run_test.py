@@ -7,7 +7,7 @@ import numpy as np
 from bin_seg import BinarySegmentation
 from opt_seg import OptSegmentation
 from online_detector import NaiveOnlineDetector, FastOnlineDetector
-from prepare_data import load_data, prepare_data, prepare_jobs_data
+from prepare_data import load_data, prepare_data, prepare_jobs_data, prepare_employment_data
 from stats_tests import check_stationarity
 import warnings
 warnings.filterwarnings("ignore")
@@ -76,13 +76,13 @@ def visualize_detections(time_series: np.ndarray, time_axes, change_points: np.n
     plt.plot(time_axes, time_series, color='gray', alpha=0.6, label='Time series')
     plt.title("Detected Change Points ")
 
-    if detection_times is None:
-        for point in change_points:
-            if is_x_date:
-                x_val = time_axes[point-1]
-            else:
-                x_val = point
-            plt.axvline(x=x_val, color='red', linestyle='--', linewidth=1, label='Change Point')
+    # if detection_times is None:
+    for point in change_points:
+        if is_x_date:
+            x_val = time_axes[point-1]
+        else:
+            x_val = point
+        plt.axvline(x=x_val, color='red', linestyle='--', linewidth=1, label='Change Point')
 
     if detection_times is not None:
         for t in detection_times:
@@ -138,8 +138,8 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
         # model = NaiveOnlineDetector(cost_type=cost_type, min_dist=15, horizon_size=100, model_type=model_type)
         
         signal_var = 1.0 if cost_type == 'l2' else None
-        min_dist = 21 if cost_type == 'normal' else 15
-        model = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=100, signal_var=signal_var)
+        min_dist = 21 if cost_type == 'normal' else 18
+        model = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=150, signal_var=signal_var)
         n = len(time_series)
         detection_times = []
         for i in range(n):
@@ -154,14 +154,20 @@ def test_detection(time_series: np.ndarray | None = None, time_axes = None, cost
     
 
 def run_tests():
-    test_detection(None, None, cost_type='normal', model_type='opt', method='online', plot=True)
+    # test_detection(None, None, cost_type='linear', model_type='opt', method='online', plot=True)
+
     # jobs_data = prepare_jobs_data()
-    target_col = 'Total_jobs'
-    # cost_type = 'mean_var'
-    cost_type = 'linear' 
-    
+    # print(jobs_data.tail())
+    # target_col = 'Leisure_Hospitality'
+    # cost_type = 'linear' 
     # test_detection(time_series=jobs_data[target_col].values, time_axes=jobs_data.index, cost_type=cost_type, model_type='opt', method='online')
     
+    employment_data = prepare_employment_data()
+    target_col = 'ComputerSystemsDesign'
+    cost_type = 'linear'
+    employment_data[target_col] = (employment_data[target_col]-employment_data[target_col].min())/(employment_data[target_col].max()-employment_data[target_col].min())
+    test_detection(time_series=employment_data[target_col].values, time_axes=employment_data.index, cost_type=cost_type, model_type='opt', method='online')
+
     # stock_data = load_data(ticker='^GSPC', start_date=datetime.datetime(2001, 1, 1), interval='1mo')
     # stock_data = prepare_data(stock_data)
     # target_col = 'Close'
@@ -179,4 +185,9 @@ if __name__ == '__main__':
     run_tests()
     end_tm = time()
     duration = end_tm - start_tm
-    print('Duration: ', np.round(duration, 2))
+    print('Duration (s): ', np.round(duration, 2))
+
+    # import torch
+    # print(torch.version)
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # print(device)

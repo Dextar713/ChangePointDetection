@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import scipy
 
 def generate_cp_series(num_tests: int = 10, num_points: int = 10, cost_type:str = 'linear'):
-    methods = {"linear": generate_linear_cpd, 'normal': generate_variance_cpd, 'l2': generate_mean_cpd}
+    methods = {"linear": generate_linear_cpd, 'normal': generate_variance_cpd, 
+               'l2': generate_mean_cpd, 'mean_var': generate_variance_cpd}
     try:
         cur_method = methods[cost_type]
     except KeyError:
@@ -18,9 +19,10 @@ def generate_cp_series(num_tests: int = 10, num_points: int = 10, cost_type:str 
 
 
 def generate_linear_cpd(num_points: int = 10):
-    slope_range = (-1.5, 1.5)
+    slope_range = (-1.7, 1.7)
     init_intercept_range = (20, 100)
     length_range = (20, 50)
+    # length_range = (20, 150)
     prev_slope = np.random.uniform(low=slope_range[0], high=slope_range[1])
     init_intercept = np.random.uniform(low=init_intercept_range[0], high=init_intercept_range[1])
     init_length = np.random.randint(low=length_range[0], high=length_range[1]+1)
@@ -29,7 +31,7 @@ def generate_linear_cpd(num_points: int = 10):
     cur_point = init_length
     for _ in range(num_points):
         cur_slope = np.random.uniform(low=slope_range[0], high=slope_range[1])
-        while np.abs(prev_slope-cur_slope)<0.35:
+        while np.abs(prev_slope-cur_slope)<0.4:
             cur_slope = np.random.uniform(low=slope_range[0], high=slope_range[1])
         cur_intercept = time_series[-1][-1]
         cur_length = np.random.randint(low=length_range[0], high=length_range[1]+1)

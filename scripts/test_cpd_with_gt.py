@@ -33,11 +33,11 @@ def test_cpd_offline(cost_type:str='linear', model:str = 'opt', min_dist:int = 1
     print(f'Average Recall: {avg_recall:.4f}')
     return avg_precision, avg_recall
 
-def test_cpd_online(cost_type:str='linear', model:str = 'opt', min_dist:int = 15, plot:bool = False):
-    tests = generate_cp_series(num_tests=150, num_points=70, cost_type=cost_type)
+def test_cpd_online(cost_type:str='linear', model:str = 'opt', min_dist:int = 15, horizon_size:int=100, plot:bool = False):
+    tests = generate_cp_series(num_tests=120, num_points=70, cost_type=cost_type)
     # detector = NaiveOnlineDetector(cost_type=cost_type, model_type=model, min_dist=min_dist, horizon_size=90)
     signal_var = 2.0 if cost_type == 'l2' else None
-    detector = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=70, signal_var=signal_var)
+    detector = FastOnlineDetector(cost_type=cost_type, min_dist=min_dist, horizon_size=horizon_size, signal_var=signal_var)
     precision_list = []
     recall_list = []
     for test in tests:
@@ -90,7 +90,7 @@ def calc_precision_recall(true_cps, detected_cps, tolerance=5):
 
 
 if __name__ == '__main__':
-    # test_cpd_offline(cost_type='normal', model='opt', min_dist=18, plot=False)
-    test_cpd_online(cost_type='normal', model='opt', min_dist=21)
+    # test_cpd_offline(cost_type='linear', model='opt', min_dist=18, plot=False)
+    test_cpd_online(cost_type='linear', model='opt', min_dist=18, horizon_size=150)
 
     # Fast online Average Precision: 0.7756, Average Recall: 0.8796, min dist = 15

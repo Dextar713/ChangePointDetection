@@ -5,7 +5,7 @@ import numpy as np
 import yfinance as yf
 import pandas as pd
 from statsmodels.tsa.seasonal import seasonal_decompose
-
+# from dotenv import load_dotenv
 
 # class DataPrepare:
 #     def __init__(self):
@@ -52,6 +52,8 @@ def prepare_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def prepare_jobs_data() -> pd.DataFrame:
+    # load_dotenv()
+    # fred_api_key = os.getenv('fred_api_key')
     fred_api_key = "cd54e1d9baa5154d79ca7ac54ab064e0"
     fred = Fred(api_key=fred_api_key)
     sectors = ["Total_jobs", "Finance", "Construction", "Education_Healthcare", "Leisure_Hospitality", "Manufacturing",
@@ -86,3 +88,31 @@ def prepare_jobs_data() -> pd.DataFrame:
     # sum1 = np.sum(jobs_data.iloc[0]) - 2*jobs_data['Total_jobs'].iloc[0]
     # print(sum1)
     return jobs_data
+
+def prepare_employment_data() -> pd.DataFrame:
+    # load_dotenv()
+    # fred_api_key = os.getenv('fred_api_key')
+    fred_api_key = "cd54e1d9baa5154d79ca7ac54ab064e0"
+    fred = Fred(api_key=fred_api_key)
+    sectors = ['TotalNonfarm', 'healthcare', 'architectural_engineering', 'construction', 'PROFESSIONAL_SCIENCE_TECHNICAL_SERVICES',
+               'ComputerElectronicProductManufacturing', 'ComputerSystemsDesign', 'FinanceInsurance', 'LeisureHospitality']
+    series_codes = ['PAYEMS', 'CES6562000101', 'CES6054130001', 'USCONS', 'CES6054000001',
+                    'CES3133400001', 'CES6054150001', 'CES5552000001', 'USLAH']
+    employment_data = pd.DataFrame()
+    for i in range(len(sectors)):
+        path_to_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', f'employment_{sectors[i]}.csv')
+        if not os.path.exists(path_to_csv):
+            print(f"Fetching {sectors[i]} Employment data...")
+            sector_data = fred.get_series(series_codes[i])
+            sector_data.to_csv(path_to_csv, header=False)
+        else:
+            print(f"{sectors[i]} Employment data already exists. Skipping download.")
+            sector_data = pd.read_csv(path_to_csv, index_col=0, parse_dates=True, header=None)
+        sector_data = sector_data.dropna()
+
+        employment_data = pd.concat([employment_data, sector_data], axis=1)
+    employment_data.columns = sectors
+    employment_data.index.name = 'Date'
+    employment_data = employment_data.dropna()[:-1]
+    # print(employment_data.head())
+    return employment_data

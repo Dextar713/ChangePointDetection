@@ -13,11 +13,12 @@ def get_gain_threshold(signal: np.ndarray, cost_type: str, signal_var: float|Non
         beta = 1.3
         return beta * np.log(n)
     if cost_type == 'linear':
-        beta = 1.2
+        # beta = 1.7
+        beta = 3.0
         diff_var = np.var(np.diff(signal))
         return (2 * beta) * np.log(n) * diff_var / 2
     if cost_type == 'mean_var':
-        beta = 2.0
+        beta = 1.5
         return beta * np.log(n)
     raise ValueError('Unsupported cost type')
 

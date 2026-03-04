@@ -51,7 +51,7 @@ class OnlineCostComputer:
             beta = 5.0
             return beta * np.log(n)
         if self.cost_type == 'mean_var':
-            beta = 2.0
+            beta = 2.2
             return 2 * beta * np.log(n)
         if self.signal_var is not None:
             variance = self.signal_var
@@ -75,8 +75,18 @@ class LinearOnlineCostComputer:
         
         self.sum_diff_var = np.array([0])
         self.n_samples = 0
+        self.offset = 0
 
     def double_size(self):
+        if self.n_samples >= 2*self.horizon_size:
+            self.offset = self.n_samples - self.horizon_size - 1
+            self.sum_x[self.offset:] -= self.sum_x[self.offset]
+            self.sum_xx[self.offset:] -= self.sum_xx[self.offset]
+            self.sum_xy[self.offset:] -= self.sum_xy[self.offset]
+            self.sum_y[self.offset:] -= self.sum_y[self.offset]
+            self.sum_yy[self.offset:] -= self.sum_yy[self.offset]
+            self.sum_diff_var[self.offset:] -= self.sum_diff_var[self.offset]
+
         self.sum_x = np.concatenate([self.sum_x, np.zeros(self.n_samples+1)])
         self.sum_y = np.concatenate([self.sum_y, np.zeros(self.n_samples+1)])
         self.sum_xx = np.concatenate([self.sum_xx, np.zeros(self.n_samples+1)])
@@ -92,11 +102,12 @@ class LinearOnlineCostComputer:
         # print(self.n_samples)
         if cur_size <= self.n_samples:
             self.double_size()
-        self.sum_x[self.n_samples] = self.sum_x[self.n_samples-1] + self.n_samples
+        x_val = self.n_samples - self.offset
+        self.sum_x[self.n_samples] = self.sum_x[self.n_samples-1] + x_val
         self.sum_y[self.n_samples] = self.sum_y[self.n_samples-1] + val
-        self.sum_xx[self.n_samples] = self.sum_xx[self.n_samples-1] + self.n_samples**2
+        self.sum_xx[self.n_samples] = self.sum_xx[self.n_samples-1] + x_val**2
         self.sum_yy[self.n_samples] = self.sum_yy[self.n_samples-1] + val**2
-        self.sum_xy[self.n_samples] = self.sum_xy[self.n_samples-1] + self.n_samples*val 
+        self.sum_xy[self.n_samples] = self.sum_xy[self.n_samples-1] + x_val*val 
         if self.n_samples > 1:
             self.sum_diff_var[self.n_samples-1] = self.sum_diff_var[self.n_samples-2] + (val - self.sum_y[self.n_samples-1] + self.sum_y[self.n_samples-2])**2
 
@@ -122,7 +133,7 @@ class LinearOnlineCostComputer:
         n = end - start
         if n == 0:
             return 0
-        beta = 1.2
+        beta = 3.0
         diff_var = (self.sum_diff_var[end-1] - self.sum_diff_var[start])/(n-1)
         # print(diff_var)
         return beta * np.log(self.horizon_size) * diff_var
